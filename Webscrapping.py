@@ -16,7 +16,7 @@ def get_itineraries_for_pair(origin, destination):
 
     ua = UserAgent()
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.add_argument("--lang=fr")
     options.add_argument(f"user-agent={ua.random}")
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
