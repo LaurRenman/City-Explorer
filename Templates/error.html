@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Erreur | TourGuide</title>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="{{ url_for('static', filename='css/style.css') }}"
+		/>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+		<div class="app-container">
+			<header class="header">
+				<div class="header-content">
+					<div class="logo">
+						<a href="{{ url_for('index') }}">
+							<i class="fas fa-map-marked-alt"></i>
+							<span>TourGuide</span>
+						</a>
+					</div>
+				</div>
+			</header>
+
+			<main class="main-content">
+				<div class="error-container">
+					<div class="error-icon">
+						<i class="fas fa-exclamation-circle"></i>
+					</div>
+					<h1>Une erreur est survenue</h1>
+					<p class="error-message">{{ error }}</p>
+					<div class="error-actions">
+						<a href="{{ url_for('index') }}" class="btn-primary">
+							<i class="fas fa-home"></i> Retour à l'accueil
+						</a>
+					</div>
+					<div class="error-help">
+						<p>Si le problème persiste, essayez les solutions suivantes :</p>
+						<ul>
+							<li>Actualisez la page</li>
+							<li>Videz le cache de votre navigateur</li>
+							<li>Essayez une recherche avec moins de sites touristiques</li>
+							<li>Essayez une autre ville</li>
+						</ul>
+					</div>
+				</div>
+			</main>
+
+			<footer class="footer">
+				<div class="footer-content">
+					<p>
+						&copy; 2025 TourGuide - Planificateur d'Itinéraires Touristiques
+					</p>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>
