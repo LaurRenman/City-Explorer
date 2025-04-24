@@ -1,0 +1,7 @@
+<script>start("/Users/istrati/Downloads/City-Explorer-main/tourguide/static/");</script>
+<script>onHasParentDirectory();</script>
+<script>addRow("cache","cache",1,96,"96 B",1745435403,"23/04/2025 21:10:03");</script>
+<script>addRow("css","css",1,96,"96 B",1745435442,"23/04/2025 21:10:42");</script>
+<script>addRow("img","img",1,64,"64 B",1745435403,"23/04/2025 21:10:03");</script>
+<script>addRow("js","js",1,160,"160 B",1745435439,"23/04/2025 21:10:39");</script>
+<script>addRow(".DS_Store",".DS_Store",0,6148,"6.0 kB",1745439012,"23/04/2025 22:10:12");</script>
