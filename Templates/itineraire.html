@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Itinéraire Optimisé - {{ ville }} | TourGuide</title>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="{{ url_for('static', filename='css/style.css') }}"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+		/>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+		<div class="app-container">
+			<header class="header">
+				<div class="header-content">
+					<div class="logo">
+						<a href="{{ url_for('index') }}">
+							<i class="fas fa-map-marked-alt"></i>
+							<span>TourGuide</span>
+						</a>
+					</div>
+					<nav class="language-selector">
+						<a href="#" class="active" data-lang="fr">FR</a>
+						<a href="#" data-lang="en">EN</a>
+						<a href="#" data-lang="ro">RO</a>
+					</nav>
+				</div>
+			</header>
+
+			<main class="main-content itinerary-page">
+				<div class="page-header">
+					<h1>
+						Votre itinéraire optimisé à <span class="accent">{{ ville }}</span>
+					</h1>
+					<div class="itinerary-stats">
+						<div class="stat">
+							<i class="fas fa-map-pin"></i>
+							<span>{{ itineraire|length }} sites</span>
+						</div>
+						<div class="stat">
+							<i class="fas fa-road"></i>
+							<span>{{ distance_totale|round(2) }} km au total</span>
+						</div>
+						<div class="stat">
+							<i class="fas fa-clock"></i>
+							<span>{{ duree.heures }}h {{ duree.minutes }}min à pied</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="itinerary-container">
+					<div class="map-container">
+						<div id="map"></div>
+					</div>
+
+					<div class="itinerary-steps">
+						<h2>Étapes de votre parcours</h2>
+
+						<div class="steps-timeline">
+							{% for site in itineraire %}
+							<div
+								class="step-item {% if loop.first %}first{% elif loop.last %}last{% endif %}"
+							>
+								<div class="step-number">{{ loop.index }}</div>
+								<div class="step-content">
+									<h3>{{ site.nom }}</h3>
+									<div class="step-details">
+										<div class="step-category">
+											<i class="fas fa-tag"></i>
+											<span>{{ site.categorie }}</span>
+										</div>
+										<div class="step-address">
+											<i class="fas fa-map-marker-alt"></i>
+											<span>{{ site.adresse }}</span>
+										</div>
+									</div>
+
+									{% if not loop.last %}
+									<div
+										class="transport-section"
+										id="transport-{{ loop.index }}"
+									>
+										<div class="transport-loading">
+											<div class="spinner-small"></div>
+											<span>Chargement des options de transport...</span>
+										</div>
+										<div class="transport-options hidden">
+											<!-- Transport options will be loaded dynamically -->
+										</div>
+									</div>
+
+									<div class="next-distance">
+										<i class="fas fa-arrow-down"></i>
+										<span
+											>{{ site.distance_suivant|round(2) }} km jusqu'à la
+											prochaine étape</span
+										>
+									</div>
+									{% endif %}
+								</div>
+							</div>
+							{% endfor %}
+						</div>
+					</div>
+				</div>
+
+				<div class="action-buttons">
+					<a
+						href="{{ url_for('lieux', _method='POST', ville=ville, nombre_sites=10) }}"
+						class="btn-secondary"
+					>
+						<i class="fas fa-edit"></i> Modifier la sélection
+					</a>
+					<button id="print-itinerary" class="btn-primary">
+						<i class="fas fa-print"></i> Imprimer l'itinéraire
+					</button>
+				</div>
+			</main>
+
+			<div id="loading-overlay" class="hidden">
+				<div class="loading-content">
+					<div class="spinner"></div>
+					<p id="loading-text">Recherche des options de transport...</p>
+				</div>
+			</div>
+		</div>
+
+		<footer class="footer">
+			<div class="footer-content">
+				<p>&copy; 2025 TourGuide - Planificateur d'Itinéraires Touristiques</p>
+			</div>
+		</footer>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+		<script>
+			// Pass data from Flask to JavaScript
+			const itinerairePoints = {{ itineraire_points|tojson }};
+			const ville = "{{ ville }}";
+		</script>
+		<script src="{{ url_for('static', filename='js/itineraire.js') }}"></script>
+	</body>
+</html>
