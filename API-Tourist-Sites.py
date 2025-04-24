@@ -2,13 +2,15 @@ import requests
 import json
 import os
 import time
+import threading
+import concurrent.futures
 from dotenv import load_dotenv
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 from tabulate import tabulate
 
 # Chargement de la clé API 
-DEFAULT_API_KEY = " !key "
+DEFAULT_API_KEY = "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"
 try:
     load_dotenv()
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", DEFAULT_API_KEY)
@@ -33,8 +35,10 @@ class RecuperateurSitesTouristiques:
             
         self.url_base = "https://api.groq.com/openai/v1/chat/completions"
         self.limite_sites = 20 
+        self.cache = {}  
+        self.cache_expiry = 24 * 3600  
         
-        # Liste prédéfinie des catégories de sites touristiques 
+        # Liste des catégories de sites touristiques 
         self.categories_predefinies = [
             "Édifices et patrimoine religieux",
             "Châteaux et architectures civiles",
@@ -58,7 +62,7 @@ class RecuperateurSitesTouristiques:
             "Monuments et sites emblématiques"
         ]
         
-        # Messages d'interface utilisateur
+        # Interface utilisateur
         self.messages = {
             "ville": "Entrez le nom de la ville pour laquelle vous souhaitez des sites touristiques: ",
             "nombre_sites": "Combien de sites touristiques souhaitez-vous obtenir? (max 20): ",
@@ -114,7 +118,16 @@ class RecuperateurSitesTouristiques:
         Returns:
             list: Liste des sites touristiques correspondant aux critères
         """
-        # Vérification de la limite maximum
+        # Vérification du cache
+        cache_key = f"{ville}_{nombre_sites}_{'-'.join(sorted(categories_souhaitees))}_{'-'.join(sorted(categories_exclues))}"
+        
+        if cache_key in self.cache:
+            cache_entry = self.cache[cache_key]
+            if time.time() < cache_entry['expiry']:
+                print(f"Utilisation des résultats en cache pour {ville}")
+                return cache_entry['data']
+        
+        
         nombre_sites = min(nombre_sites, self.limite_sites)
         
         # Prompt pour Groq 
@@ -172,11 +185,11 @@ class RecuperateurSitesTouristiques:
         }
         
         try:
-         
-            reponse = requests.post(self.url_base, headers=en_tetes, json=charge_utile)
+            # Envoi de la requête 
+            reponse = requests.post(self.url_base, headers=en_tetes, json=charge_utile, timeout=15)
             reponse.raise_for_status() 
             
-         
+            # Analyse de la réponse
             resultat = reponse.json()
             
             # Extraction du contenu de la réponse
@@ -190,21 +203,30 @@ class RecuperateurSitesTouristiques:
                 contenu = contenu[:-3]
             contenu = contenu.strip()
             
-          
+            # Analyse du JSON
             try:
                 sites_touristiques = json.loads(contenu)
                 
-               
+                # Limitation du nombre de sites
                 sites_touristiques = sites_touristiques[:self.limite_sites]
+                
+                # Sauvegarde dans le cache
+                self.cache[cache_key] = {
+                    'data': sites_touristiques,
+                    'expiry': time.time() + self.cache_expiry
+                }
+                
+                # Sauvegarde dans un fichier local
+                self.sauvegarder_dans_fichier(ville, sites_touristiques)
                 
                 return sites_touristiques
             except json.JSONDecodeError as e:
                 print(f"Erreur lors du décodage JSON: {e}")
                 print(f"Contenu reçu: {contenu}")
                 
-                # Tentative de correction du JSON mal formaté
+                # Correction du JSON mal formaté
                 try:
-             
+                   
                     while not (contenu.startswith('[') and contenu.endswith(']')):
                         if not contenu.startswith('['):
                             contenu = contenu[contenu.find('['):]
@@ -215,14 +237,76 @@ class RecuperateurSitesTouristiques:
                     return sites_touristiques[:self.limite_sites]
                 except (json.JSONDecodeError, ValueError) as e2:
                     print(f"Impossible de corriger le JSON: {e2}")
-                    return []
+                    return self.obtenir_sites_locaux(ville)
             
+        except requests.exceptions.Timeout:
+            print(f"Timeout: La requête API a pris trop de temps pour {ville}")
+            return self.obtenir_sites_locaux(ville)
         except requests.exceptions.RequestException as e:
             print(f"Erreur lors de la requête API pour les sites filtrés: {e}")
-            return []
+            return self.obtenir_sites_locaux(ville)
         except Exception as e:
             print(f"Erreur inattendue lors de l'obtention des sites filtrés: {e}")
-            return []
+            return self.obtenir_sites_locaux(ville)
+    
+    def obtenir_sites_locaux(self, ville):
+        """
+        Récupère les sites touristiques depuis un fichier local
+        
+        Args:
+            ville (str): Le nom de la ville
+            
+        Returns:
+            list: Liste des sites touristiques
+        """
+        # Tentative de lecture depuis un fichier JSON local
+        nom_fichier = f"{ville.lower().replace(' ', '_')}_sites_touristiques.json"
+        try:
+            with open(nom_fichier, 'r', encoding='utf-8') as f:
+                print(f"Données récupérées depuis le fichier local pour {ville}")
+                return json.load(f)
+        except:
+            return self.generer_sites_par_defaut(ville)
+    
+    def generer_sites_par_defaut(self, ville):
+        """
+        Génère des sites par défaut pour les villes communes
+        
+        Args:
+            ville (str): Le nom de la ville
+            
+        Returns:
+            list: Liste des sites touristiques par défaut
+        """
+        ville_normalisee = ville.lower()
+        
+        # Rechercher des correspondances partielles
+        for nom_ville, sites in self.sites_par_defaut.items():
+            if nom_ville in ville_normalisee or ville_normalisee in nom_ville:
+                print(f"Utilisation des sites par défaut pour {ville}")
+                return sites
+        
+        print(f"Aucun site touristique trouvé pour {ville}")
+        return []
+    
+    def sauvegarder_dans_fichier(self, ville, sites, nom_fichier=None):
+        """
+        Sauvegarde les sites touristiques dans un fichier JSON
+        
+        Args:
+            ville (str): Le nom de la ville
+            sites (list): La liste des sites touristiques
+            nom_fichier (str, optional): Le nom du fichier
+        """
+        if not nom_fichier:
+            nom_fichier = f"{ville.lower().replace(' ', '_')}_sites_touristiques.json"
+        
+        try:
+            with open(nom_fichier, 'w', encoding='utf-8') as f:
+                json.dump(sites, f, ensure_ascii=False, indent=4)
+            # Message de sauvegarde supprimé pour garder l'interface propre
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde des données: {e}")
     
     def adapter_reponse_oui_non(self, reponse):
         """
@@ -261,7 +345,7 @@ class OptimiseurItineraire:
     Classe pour optimiser l'itinéraire entre les sites touristiques choisis
     """
     
-    def __init__(self, recuperateur, temps_entre_geocodage=1):
+    def __init__(self, recuperateur, temps_entre_geocodage=0.5):
         """
         Initialise l'optimiseur d'itinéraire
         
@@ -272,7 +356,8 @@ class OptimiseurItineraire:
         self.recuperateur = recuperateur
         self.geolocator = Nominatim(user_agent="planificateur_touristique")
         self.temps_entre_geocodage = temps_entre_geocodage
-        self.cache_coordonnees = {}  
+        self.cache_coordonnees = {} 
+        self.max_workers = 5  
     
     def obtenir_coordonnees(self, adresse, ville):
         """
@@ -286,7 +371,7 @@ class OptimiseurItineraire:
             tuple: Les coordonnées (latitude, longitude) ou None en cas d'erreur
         """
         # Vérifie si l'adresse est déjà dans le cache
-        cle_cache = f"{adresse}, {ville}"
+        cle_cache = f"{adresse}, {ville}".lower()
         if cle_cache in self.cache_coordonnees:
             return self.cache_coordonnees[cle_cache]
         
@@ -294,21 +379,66 @@ class OptimiseurItineraire:
         adresse_complete = f"{adresse}, {ville}"
         
         try:
-            # Utilise le géocodage pour obtenir les coordonnées
-            lieu = self.geolocator.geocode(adresse_complete)
+            # Utilise le géocodage pour obtenir les coordonnées avec timeout
+            lieu = self.geolocator.geocode(adresse_complete, timeout=5)
             time.sleep(self.temps_entre_geocodage)  
             
             if lieu:
                 coordonnees = (lieu.latitude, lieu.longitude)
-                # Sauvegarde dans le cache pour utilisation future
                 self.cache_coordonnees[cle_cache] = coordonnees
                 return coordonnees
             else:
+                # Essayez juste avec la ville si l'adresse complète échoue
+                lieu_ville = self.geolocator.geocode(ville, timeout=5)
+                if lieu_ville:
+                    import random
+                    lat_offset = random.uniform(-0.01, 0.01)
+                    lon_offset = random.uniform(-0.01, 0.01)
+                    coordonnees = (lieu_ville.latitude + lat_offset, lieu_ville.longitude + lon_offset)
+                    self.cache_coordonnees[cle_cache] = coordonnees
+                    return coordonnees
                 print(f"Erreur lors du géocodage de l'adresse: {adresse_complete}")
                 return None
         except Exception as e:
             print(f"Erreur lors du géocodage: {str(e)}")
             return None
+    
+    def geocoder_par_lots(self, adresses, ville, taille_lot=5):
+        """
+        Géocode plusieurs adresses en parallèle par lots
+        
+        Args:
+            adresses (list): Liste des adresses à géocoder
+            ville (str): La ville
+            taille_lot (int): Taille de chaque lot
+            
+        Returns:
+            list: Liste des coordonnées correspondantes
+        """
+        resultats = []
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Soumettre les adresses pour géocodage
+            futures_to_index = {}
+            for i, adresse in enumerate(adresses):
+                future = executor.submit(self.obtenir_coordonnees, adresse, ville)
+                futures_to_index[future] = i
+                if i % taille_lot == 0 and i > 0:
+                    time.sleep(1)
+            
+            # Préparer le tableau de résultats avec des espaces réservés
+            resultats = [None] * len(adresses)
+            
+            # Traiter les résultats au fur et à mesure qu'ils se terminent
+            for future in concurrent.futures.as_completed(futures_to_index):
+                index = futures_to_index[future]
+                try:
+                    resultats[index] = future.result()
+                except Exception as exc:
+                    print(f"L'adresse à l'index {index} a généré une exception: {exc}")
+                    resultats[index] = None
+        
+        return resultats
     
     def calculer_distance(self, coord1, coord2):
         """
@@ -339,13 +469,16 @@ class OptimiseurItineraire:
         """
         print("Calcul de l'itinéraire optimal...")
         
-        # Obtient les coordonnées de tous les sites
-        for site in sites:
-            nom = site.get("nom", "")
-            adresse = site.get("adresse", "")
-            site["coordonnees"] = self.obtenir_coordonnees(adresse, ville)
+        # Obtenir les coordonnées de tous les sites en parallèle
+        adresses = [site.get("adresse", "") for site in sites]
+        coordonnees = self.geocoder_par_lots(adresses, ville)
         
+        # Appliquer les coordonnées aux sites
+        for i, site in enumerate(sites):
+            if i < len(coordonnees) and coordonnees[i]:
+                site["coordonnees"] = coordonnees[i]
      
+        # Filtrer les sites valides avec coordonnées
         sites_valides = [site for site in sites if site.get("coordonnees")]
         
         if not sites_valides:
@@ -455,10 +588,9 @@ class OptimiseurItineraire:
         if self.recuperateur.adapter_reponse_oui_non(reponse):
             indices_input = input("Entrez les numéros des sites que vous souhaitez visiter, séparés par des virgules (ex: 1,3,5): ")
             try:
-                # Parse et valide les indices
+               
                 indices = [int(idx.strip()) for idx in indices_input.split(",") if idx.strip()]
-                indices = [idx - 1 for idx in indices if 0 < idx <= len(sites)]  # Ajustement pour l'indexation à partir de 0
-                
+                indices = [idx - 1 for idx in indices if 0 < idx <= len(sites)] 
                 if not indices:
                     print("Sélection invalide. Utilisation de tous les sites.")
                     return sites
@@ -499,7 +631,7 @@ class OptimiseurItineraire:
             # Demande à l'utilisateur de choisir un site de départ
             depart_input = input("Par quel site souhaitez-vous commencer votre visite? Entrez le nom ou le numéro du site: ")
             
-       
+            # Essaie d'interpréter l'entrée comme un numéro
             try:
                 depart_index = int(depart_input.strip()) - 1
                 if 0 <= depart_index < len(sites):
@@ -507,12 +639,12 @@ class OptimiseurItineraire:
             except ValueError:
                 pass
             
-         
+            # Si ce n'est pas un numéro valide, utilise l'entrée comme nom
             return depart_input.strip()
             
         except Exception as e:
             print(f"Erreur lors du choix du site de départ: {e}")
-            return sites[0]["nom"]  
+            return sites[0]["nom"]
 
 
 def installer_dependances():
@@ -535,13 +667,11 @@ def installer_dependances():
 
 
 def main():
-   
+    # Installation des dépendances au besoin
     installer_dependances()
-    
-  
     recuperateur = RecuperateurSitesTouristiques()
     
-
+    # Demande des informations à l'utilisateur
     ville = input(recuperateur.afficher_message("ville"))
     
     nombre_sites_input = input(recuperateur.afficher_message("nombre_sites"))
@@ -552,7 +682,7 @@ def main():
     
     print(recuperateur.afficher_message("recuperation", ville))
     
-   
+    # Utilisation des catégories prédéfinies
     categories_disponibles = recuperateur.obtenir_categories_disponibles(ville)
     
     if categories_disponibles:
@@ -585,7 +715,7 @@ def main():
                     exclusions_input = input()
                     categories_exclues = [exc.strip() for exc in exclusions_input.split(",")] if exclusions_input.strip() else []
         
-        # Requête API avec les préférences utilisateur
+        # Requête API avec les préférences utilisateur et fallbacks
         sites_touristiques = recuperateur.obtenir_sites_filtres(
             ville, 
             categories_souhaitees, 
