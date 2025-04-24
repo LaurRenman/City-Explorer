@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>TourGuide - Planificateur d'Itinéraires Touristiques</title>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="{{ url_for('static', filename='css/style.css') }}"
+		/>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+	</head>
+	<body>
+		<div class="app-container">
+			<header class="header">
+				<div class="header-content">
+					<div class="logo">
+						<i class="fas fa-map-marked-alt"></i>
+						<span>TourGuide</span>
+					</div>
+					<nav class="language-selector">
+						<a href="#" class="active" data-lang="fr">FR</a>
+						<a href="#" data-lang="en">EN</a>
+						<a href="#" data-lang="ro">RO</a>
+					</nav>
+				</div>
+			</header>
+
+			<main class="main-content">
+				<div class="hero-section animate__animated animate__fadeIn">
+					<h1>
+						Découvrez la meilleure façon de visiter
+						<span class="accent">n'importe quelle ville</span>
+					</h1>
+					<p>
+						Planifiez votre itinéraire optimisé avec les meilleurs sites
+						touristiques et obtenez des recommandations de transport entre
+						chaque étape.
+					</p>
+
+					<div class="search-container">
+						<form id="city-form" class="animate__animated animate__fadeInUp">
+							<div class="input-group">
+								<i class="fas fa-search"></i>
+								<input
+									type="text"
+									id="city-input"
+									name="ville"
+									placeholder="Entrez le nom d'une ville..."
+									required
+								/>
+							</div>
+							<div class="input-group">
+								<i class="fas fa-list-ol"></i>
+								<select id="sites-count" name="nombre_sites">
+									<option value="5">5 sites</option>
+									<option value="10" selected>10 sites</option>
+									<option value="15">15 sites</option>
+									<option value="20">20 sites</option>
+								</select>
+							</div>
+							<button type="submit" class="search-button">
+								Découvrir
+								<i class="fas fa-chevron-right"></i>
+							</button>
+						</form>
+					</div>
+				</div>
+
+				<div class="features-section">
+					<div class="feature-card animate__animated animate__fadeInUp">
+						<div class="feature-icon">
+							<i class="fas fa-lightbulb"></i>
+						</div>
+						<h3>IA Recommandations</h3>
+						<p>
+							Découvrez les meilleurs sites touristiques sélectionnés par notre
+							IA.
+						</p>
+					</div>
+					<div
+						class="feature-card animate__animated animate__fadeInUp"
+						style="animation-delay: 0.2s"
+					>
+						<div class="feature-icon">
+							<i class="fas fa-route"></i>
+						</div>
+						<h3>Itinéraires Optimisés</h3>
+						<p>
+							Obtenez le parcours le plus efficace entre tous les sites que vous
+							souhaitez visiter.
+						</p>
+					</div>
+					<div
+						class="feature-card animate__animated animate__fadeInUp"
+						style="animation-delay: 0.4s"
+					>
+						<div class="feature-icon">
+							<i class="fas fa-bus"></i>
+						</div>
+						<h3>Options de Transport</h3>
+						<p>
+							Comparez les différents moyens de transport entre chaque étape.
+						</p>
+					</div>
+				</div>
+			</main>
+
+			<div id="loading-overlay" class="hidden">
+				<div class="loading-content">
+					<div class="spinner"></div>
+					<p id="loading-text">Recherche des meilleurs sites touristiques...</p>
+				</div>
+			</div>
+		</div>
+
+		<footer class="footer">
+			<div class="footer-content">
+				<p>&copy; 2025 TourGuide - Planificateur d'Itinéraires Touristiques</p>
+			</div>
+		</footer>
+
+		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+	</body>
+</html>
