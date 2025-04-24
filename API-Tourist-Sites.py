@@ -10,7 +10,7 @@ from geopy.geocoders import Nominatim
 from tabulate import tabulate
 
 # Chargement de la clé API 
-DEFAULT_API_KEY = "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"
+DEFAULT_API_KEY = " !key "
 try:
     load_dotenv()
     GROQ_API_KEY = os.getenv("GROQ_API_KEY", DEFAULT_API_KEY)
