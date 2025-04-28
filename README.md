@@ -2,19 +2,14 @@
 
 The aim of this project was to allow users to explore any city in the world by providing suggestions of popular tourist spots and calculating the best route between them
 
-## Features 
-
-**AI recommendations**   - discover the most popular tourist spots for a given city
-
-**Optimized Routes**     - get the best route between sites
-
-**Transport options**    - compare between transportation options
-
-**Site selection**       - choose the sites you want to visit
-
-**Filtered queries**     - filter the sites by category
-
-**Language support**     - support for 3 languages (english, french, romanian)
+|Features                |Description                                              |
+|------------------------|---------------------------------------------------------|
+|**AI recommendations**  |discover the most popular tourist spots for a given city |
+|**Optimized Routes**    |get the best route between sites                         |
+|**Transport options**   |compare between transportation options                   |
+|**Site selection**      |choose the sites you want to visit                       |
+|**Filtered queries**    |filter the sites by category                             |
+|**Language support**    |support for 3 languages (english, french, romanian)      |
 
 
 
